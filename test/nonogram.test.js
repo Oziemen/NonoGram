@@ -13,6 +13,7 @@ import {
   generateUniquePuzzle,
 } from '../src/core/nonogram.js';
 import { PUZZLES, getPuzzle, DIFFICULTY_ORDER } from '../src/core/puzzles.js';
+import { levelConfig, generateLevel, starRating, mulberry32 } from '../src/core/levels.js';
 
 test('lineClues: basisgevallen', () => {
   assert.deepEqual(lineClues([1, 1, 0, 1, 1, 1]), [2, 3]);
@@ -126,6 +127,49 @@ test('generateUniquePuzzle: levert een uniek oplosbaar raster', () => {
   assert.equal(grid.length, 5);
   assert.equal(grid[0].length, 5);
   assert.equal(hasUniqueSolution(grid), true, 'het gegenereerde raster moet uniek oplosbaar zijn');
+});
+
+test('mulberry32: deterministisch en in bereik [0,1)', () => {
+  const a = mulberry32(42);
+  const b = mulberry32(42);
+  for (let i = 0; i < 5; i += 1) {
+    const v = a();
+    assert.equal(v, b());
+    assert.ok(v >= 0 && v < 1);
+  }
+});
+
+test('levelConfig: grootte loopt op en blijft begrensd', () => {
+  assert.equal(levelConfig(1).size, 5);
+  assert.equal(levelConfig(5).size, 5);
+  assert.equal(levelConfig(6).size, 10);
+  assert.equal(levelConfig(15).size, 10);
+  assert.equal(levelConfig(16).size, 15);
+  assert.equal(levelConfig(999).size, 15);
+  for (const n of [1, 7, 20, 100]) {
+    const c = levelConfig(n);
+    assert.ok(c.density > 0.3 && c.density <= 0.66, `dichtheid in bereik voor level ${n}`);
+  }
+});
+
+test('generateLevel: deterministisch, geldig en uniek oplosbaar', () => {
+  // Test een reeks levels over alle grootte-tiers.
+  for (const n of [1, 3, 6, 12, 16, 25, 40]) {
+    const p1 = generateLevel(n);
+    const p2 = generateLevel(n);
+    assert.deepEqual(p1.grid, p2.grid, `level ${n} is deterministisch`);
+    assert.equal(p1.id, `level-${n}`);
+    assert.equal(hasUniqueSolution(p1.grid), true, `level ${n} moet uniek oplosbaar zijn`);
+    const size = levelConfig(n).size;
+    assert.equal(p1.grid.length, size);
+    assert.equal(p1.grid[0].length, size);
+  }
+});
+
+test('starRating: 1–3 sterren, sneller is beter', () => {
+  assert.equal(starRating(1, 1000), 3);           // heel snel
+  assert.equal(starRating(1, 25 * 3 * 1000), 2);  // gemiddeld
+  assert.equal(starRating(1, 25 * 10 * 1000), 1); // traag
 });
 
 test('getPuzzle: vindt bestaande en retourneert null voor onbekende', () => {

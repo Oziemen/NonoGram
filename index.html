@@ -2,10 +2,20 @@
 <html lang="nl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="theme-color" content="#6366f1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#6366f1" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0f1117" media="(prefers-color-scheme: dark)" />
   <title>Monogram · Japanse puzzel</title>
-  <meta name="description" content="Monogram — een Japanse nonogram/picross puzzel. Onthul de verborgen tekening." />
+  <meta name="description" content="Monogram — een Japanse nonogram/picross puzzel. Speel eindeloos levels en onthul verborgen tekeningen." />
+
+  <!-- PWA / installeerbaar op Android en iOS -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Monogram" />
+  <link rel="apple-touch-icon" href="icons/icon-180.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧩</text></svg>" />
   <link rel="stylesheet" href="src/ui/styles.css" />
 </head>
@@ -35,6 +45,17 @@
           <div class="hero-stats" id="heroStats"></div>
         </div>
 
+        <button class="level-banner" id="levelsBtn">
+          <div class="level-banner-main">
+            <span class="level-banner-emoji">🎯</span>
+            <div>
+              <span class="level-banner-title">Levels — speel eindeloos door</span>
+              <span class="level-banner-desc" id="levelBannerDesc">Begin bij level 1</span>
+            </div>
+          </div>
+          <span class="level-banner-go">Spelen ›</span>
+        </button>
+
         <div class="quick-actions">
           <button class="action-card daily" id="dailyBtn">
             <span class="action-emoji">📅</span>
@@ -49,6 +70,22 @@
         </div>
 
         <div id="puzzleGroups"></div>
+      </section>
+
+      <!-- Levels-scherm -->
+      <section id="levelsScreen" class="screen hidden">
+        <div class="game-header">
+          <button class="text-btn" id="levelsBackBtn">‹ Terug</button>
+          <div class="game-title">Levels</div>
+          <div class="game-meta"><span class="stars-total" id="starsTotal">★ 0</span></div>
+        </div>
+        <p class="levels-intro">
+          Elk level is een uniek gegenereerde puzzel die steeds groter en
+          uitdagender wordt. Los een level op om het volgende te ontgrendelen —
+          het gaat oneindig door!
+        </p>
+        <div class="level-grid" id="levelGrid"></div>
+        <div class="levels-more" id="levelsMore"></div>
       </section>
 
       <!-- Spelscherm -->
@@ -96,7 +133,8 @@
       <div class="win-card">
         <div class="confetti" id="confetti"></div>
         <div class="win-emoji" id="winEmoji">🎉</div>
-        <h2>Opgelost!</h2>
+        <h2 id="winHeading">Opgelost!</h2>
+        <div class="win-stars hidden" id="winStars"></div>
         <p class="win-name" id="winName"></p>
         <div class="win-stats">
           <div><span class="win-stat-label">Tijd</span><span class="win-stat-value" id="winTime">00:00</span></div>
@@ -113,5 +151,13 @@
   </div>
 
   <script type="module" src="src/ui/app.js"></script>
+  <script>
+    // Registreer de service worker voor offline gebruik / installeerbaarheid.
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => { /* offline niet kritiek */ });
+      });
+    }
+  </script>
 </body>
 </html>

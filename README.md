@@ -9,10 +9,18 @@ build-stap.
 
 ## ✨ Functies
 
+- **Eindeloze levels** 🎯 — een oneindige reeks procedureel gegenereerde
+  puzzels die steeds groter en moeilijker worden (5×5 → 10×10 → 15×15). Elk
+  level is deterministisch (altijd dezelfde puzzel), uniek oplosbaar, en levert
+  1–3 sterren op basis van je tijd. Los een level op om het volgende te
+  ontgrendelen.
 - **12 handgemaakte puzzels** in drie moeilijkheidsgraden (5×5, 10×10, 15×15),
   elk gegarandeerd puur-logisch en uniek oplosbaar.
 - **Dagelijkse puzzel** — elke dag dezelfde uitdaging voor iedereen.
 - **Willekeurige puzzel** — vers gegenereerd en gegarandeerd oplosbaar.
+- **Installeerbaar op mobiel (PWA)** — voeg de app toe aan je startscherm op
+  **Android en iOS**; werkt daarna offline dankzij een service worker. De
+  layout is mobiel-eerst met ondersteuning voor notches (safe-area).
 - **Vullen / kruisen**, slepen om te tekenen (met as-vergrendeling voor rechte
   lijnen), en volledige touch-ondersteuning.
 - **Toetsenbordbesturing**: pijltjes om te navigeren, `spatie` om te vullen,
@@ -40,6 +48,15 @@ Open daarna <http://localhost:8080> in je browser. (Een andere poort kan met
 > rechtstreeks `index.html` openen vanaf schijf werkt niet in de meeste
 > browsers.
 
+### Op je telefoon installeren
+
+Host de map op een (HTTPS-)webserver en open die op je telefoon:
+
+- **Android (Chrome):** menu → *App installeren* / *Toevoegen aan startscherm*.
+- **iOS (Safari):** deelknop → *Zet op beginscherm*.
+
+De app start dan schermvullend, zonder browserbalk, en werkt offline.
+
 ## 🧪 Tests
 
 De volledige spellogica is losgekoppeld van de UI en wordt getest met de
@@ -61,17 +78,22 @@ Dit controleert onder andere:
 ## 🗂️ Structuur
 
 ```
-index.html            App-shell
+index.html            App-shell + PWA-meta
+manifest.webmanifest  PWA-manifest (installeerbaar)
+sw.js                 Service worker (offline cache)
 server.js             Kleine statische webserver (geen dependencies)
+gen-icons.mjs         Build-hulp: genereert de app-iconen
+icons/                App-iconen (192/512/maskable/apple-touch)
 src/
   core/
     nonogram.js        Pure spellogica: aanwijzingen, solver, generator
     puzzles.js         Puzzelbibliotheek (pixel-tekeningen)
+    levels.js          Eindeloze, deterministische levelgeneratie
   ui/
     app.js             Game-controller (DOM, interactie, opslag)
     styles.css         Vormgeving + thema's
 test/
-  nonogram.test.js     Unit-tests voor de core
+  nonogram.test.js     Unit-tests voor de core (logica + levels)
 ```
 
 ## 🎮 Hoe speel je?

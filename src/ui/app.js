@@ -3,11 +3,13 @@
 
 import { computeClues, isSolved, lineSatisfaction, generateUniquePuzzle } from '../core/nonogram.js';
 import { PUZZLES, getPuzzle, DIFFICULTY_ORDER, DIFFICULTY_LABELS } from '../core/puzzles.js';
+import { generateLevel, levelConfig, starRating } from '../core/levels.js';
 
 // ------------------------------------------------------------ Opslag
 const STORE = {
   progress: 'monogram:progress',
   settings: 'monogram:settings',
+  levels: 'monogram:levels',
   save: (id) => `monogram:save:${id}`,
 };
 
@@ -21,6 +23,8 @@ const writeJSON = (key, val) => {
 
 let progress = readJSON(STORE.progress, {});
 let settings = readJSON(STORE.settings, { theme: 'light', sound: true, autoCross: true });
+// Levels: hoogste ontgrendelde level + beste tijd/sterren per level.
+let levelData = readJSON(STORE.levels, { unlocked: 1, best: {}, stars: {} });
 
 // ------------------------------------------------------------ Geluid
 const audio = (() => {
@@ -57,7 +61,10 @@ const audio = (() => {
 // ------------------------------------------------------------ Elementen
 const $ = (id) => document.getElementById(id);
 const el = {
-  home: $('homeScreen'), game: $('gameScreen'),
+  home: $('homeScreen'), game: $('gameScreen'), levels: $('levelsScreen'),
+  levelGrid: $('levelGrid'), levelsMore: $('levelsMore'), starsTotal: $('starsTotal'),
+  levelBannerDesc: $('levelBannerDesc'),
+  winHeading: $('winHeading'), winStars: $('winStars'),
   groups: $('puzzleGroups'), heroStats: $('heroStats'),
   board: $('board'), rowClues: $('rowClues'), colClues: $('colClues'),
   corner: $('corner'), layout: $('puzzleLayout'),
@@ -84,6 +91,7 @@ const game = {
   startTime: 0, elapsed: 0, timerId: null,
   won: false,
   drag: null,
+  level: null,        // levelnummer als dit een level-puzzel is, anders null
 };
 
 // ------------------------------------------------------------ Thema/geluid
@@ -121,6 +129,12 @@ function renderHome() {
     <span class="chip">Opgelost <strong>${done}/${total}</strong></span>
     <span class="chip">Voortgang <strong>${Math.round((done / total) * 100)}%</strong></span>
   `;
+
+  // Levels-banner bijwerken.
+  const reached = levelData.unlocked;
+  el.levelBannerDesc.textContent = reached > 1
+    ? `Je bent bij level ${reached} — ga verder!`
+    : 'Begin bij level 1';
 
   el.groups.innerHTML = '';
   for (const diff of DIFFICULTY_ORDER) {
@@ -161,6 +175,7 @@ function renderHome() {
 // ================================================== PUZZEL STARTEN
 function startPuzzle(puzzle) {
   game.puzzle = puzzle;
+  game.level = puzzle.level ?? null;
   const clues = computeClues(puzzle.grid);
   game.clues = clues;
   game.width = clues.width;
@@ -394,6 +409,23 @@ function checkWin() {
     }
 
   const id = game.puzzle.id;
+
+  if (game.level != null) {
+    // Level-modus: beste tijd + sterren opslaan en het volgende ontgrendelen.
+    const n = game.level;
+    const prevBest = levelData.best[n];
+    const best = prevBest && prevBest < game.elapsed ? prevBest : game.elapsed;
+    const stars = starRating(n, best);
+    levelData.best[n] = best;
+    levelData.stars[n] = Math.max(levelData.stars[n] || 0, stars);
+    levelData.unlocked = Math.max(levelData.unlocked, n + 1);
+    writeJSON(STORE.levels, levelData);
+    try { localStorage.removeItem(STORE.save(id)); } catch { /* ignore */ }
+    audio.win();
+    showWin(best, { level: n, stars });
+    return;
+  }
+
   const prev = progress[id] || {};
   const best = prev.bestMs && prev.bestMs < game.elapsed ? prev.bestMs : game.elapsed;
   progress[id] = { completed: true, bestMs: best };
@@ -404,9 +436,24 @@ function checkWin() {
   showWin(best);
 }
 
-function showWin(best) {
-  el.winName.textContent = `${game.puzzle.emoji}  ${game.puzzle.name}`;
-  el.winEmoji.textContent = game.puzzle.emoji;
+function showWin(best, levelInfo = null) {
+  const nextBtn = $('nextBtn');
+  if (levelInfo) {
+    el.winHeading.textContent = `Level ${levelInfo.level} voltooid!`;
+    el.winName.textContent = 'Klaar voor de volgende uitdaging?';
+    el.winEmoji.textContent = ['🎯', '⭐', '🏆'][levelInfo.stars - 1] || '🎯';
+    el.winStars.classList.remove('hidden');
+    el.winStars.innerHTML = [1, 2, 3]
+      .map((i) => `<span class="star ${i <= levelInfo.stars ? 'on' : ''}">★</span>`)
+      .join('');
+    nextBtn.textContent = 'Volgend level';
+  } else {
+    el.winHeading.textContent = 'Opgelost!';
+    el.winName.textContent = `${game.puzzle.emoji}  ${game.puzzle.name}`;
+    el.winEmoji.textContent = game.puzzle.emoji;
+    el.winStars.classList.add('hidden');
+    nextBtn.textContent = 'Volgende puzzel';
+  }
   el.winTime.textContent = fmtTime(game.elapsed);
   el.winBest.textContent = fmtTime(best);
   spawnConfetti();
@@ -484,6 +531,7 @@ function clearBoard() {
 function showScreen(name) {
   el.home.classList.toggle('hidden', name !== 'home');
   el.game.classList.toggle('hidden', name !== 'game');
+  el.levels.classList.toggle('hidden', name !== 'levels');
   window.scrollTo(0, 0);
 }
 
@@ -493,6 +541,16 @@ function goHome() {
   el.winOverlay.classList.add('hidden');
   renderHome();
   showScreen('home');
+}
+
+// Verlaat het spel: in level-modus terug naar het levels-overzicht,
+// anders naar het startscherm.
+function leaveGame() {
+  stopTimer();
+  saveGameState();
+  el.winOverlay.classList.add('hidden');
+  if (game.level != null) { openLevels(); }
+  else { renderHome(); showScreen('home'); }
 }
 
 // ================================================== SPECIALE PUZZELS
@@ -524,8 +582,44 @@ function randomPuzzle() {
   }, 30);
 }
 
+// ================================================== LEVELS
+function openLevels() {
+  renderLevels();
+  showScreen('levels');
+}
+
+function renderLevels() {
+  const unlocked = levelData.unlocked;
+  const totalStars = Object.values(levelData.stars).reduce((a, b) => a + b, 0);
+  el.starsTotal.textContent = `★ ${totalStars}`;
+
+  // Toon alle ontgrendelde levels plus het eerstvolgende (nog op slot).
+  const count = unlocked + 1;
+  el.levelGrid.innerHTML = '';
+  for (let n = 1; n <= count; n += 1) {
+    const done = !!levelData.best[n];
+    const locked = n > unlocked;
+    const stars = levelData.stars[n] || 0;
+    const size = levelConfig(n).size;
+
+    const tile = document.createElement('button');
+    tile.className = `level-tile${done ? ' done' : ''}${locked ? ' locked' : ''}`;
+    tile.disabled = locked;
+    tile.innerHTML = `
+      <span class="lt-num">${locked ? '🔒' : n}</span>
+      <span class="lt-size">${size}×${size}</span>
+      <span class="lt-stars">${done ? '★★★'.slice(0, stars).padEnd(3, '☆') : (locked ? '' : '·')}</span>
+    `;
+    if (!locked) tile.addEventListener('click', () => startPuzzle(generateLevel(n)));
+    el.levelGrid.appendChild(tile);
+  }
+
+  el.levelsMore.innerHTML = `<p class="levels-hint">Los level ${unlocked} op om verder te komen — er is geen einde! 🚀</p>`;
+}
+
 function nextPuzzle() {
   el.winOverlay.classList.add('hidden');
+  if (game.level != null) { startPuzzle(generateLevel(game.level + 1)); return; }
   const list = PUZZLES;
   const idx = list.findIndex((p) => p.id === game.puzzle.id);
   // Zoek de volgende nog niet-opgeloste puzzel, anders de eerstvolgende.
@@ -592,12 +686,14 @@ function bindEvents() {
   el.hint.addEventListener('click', useHint);
   el.clear.addEventListener('click', clearBoard);
 
-  $('backBtn').addEventListener('click', goHome);
+  $('backBtn').addEventListener('click', leaveGame);
   $('brandBtn').addEventListener('click', goHome);
   $('dailyBtn').addEventListener('click', dailyPuzzle);
   $('randomBtn').addEventListener('click', randomPuzzle);
+  $('levelsBtn').addEventListener('click', openLevels);
+  $('levelsBackBtn').addEventListener('click', goHome);
   $('nextBtn').addEventListener('click', nextPuzzle);
-  $('winHomeBtn').addEventListener('click', goHome);
+  $('winHomeBtn').addEventListener('click', leaveGame);
 
   el.themeBtn.addEventListener('click', () => {
     settings.theme = settings.theme === 'dark' ? 'light' : 'dark';
