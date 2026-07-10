@@ -1,0 +1,21 @@
+{
+  "name": "monogram",
+  "version": "1.0.0",
+  "description": "Monogram — een Japanse nonogram/picross puzzel als complete web-app. Vul de rasters in op basis van de cijferaanwijzingen en onthul de verborgen afbeelding.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "nonogram",
+    "picross",
+    "monogram",
+    "puzzle",
+    "game",
+    "japanese-puzzle"
+  ],
+  "author": "",
+  "license": "MIT"
+}

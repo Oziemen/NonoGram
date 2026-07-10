@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#6366f1" />
+  <title>Monogram · Japanse puzzel</title>
+  <meta name="description" content="Monogram — een Japanse nonogram/picross puzzel. Onthul de verborgen tekening." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧩</text></svg>" />
+  <link rel="stylesheet" href="src/ui/styles.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- ============================ HOME ============================ -->
+    <header class="topbar">
+      <button class="brand" id="brandBtn" title="Naar het startscherm">
+        <span class="brand-mark">🧩</span>
+        <span class="brand-text">Mono<span>gram</span></span>
+      </button>
+      <div class="topbar-actions">
+        <button class="icon-btn" id="soundBtn" title="Geluid aan/uit" aria-label="Geluid">🔊</button>
+        <button class="icon-btn" id="themeBtn" title="Licht/donker thema" aria-label="Thema">🌙</button>
+      </div>
+    </header>
+
+    <main>
+      <!-- Startscherm -->
+      <section id="homeScreen" class="screen">
+        <div class="hero">
+          <h1>Los de tekening op</h1>
+          <p class="hero-sub">
+            Gebruik de cijfers naast elke rij en kolom om te ontdekken welke vakjes
+            gevuld moeten worden. De getallen geven aaneengesloten reeksen aan.
+          </p>
+          <div class="hero-stats" id="heroStats"></div>
+        </div>
+
+        <div class="quick-actions">
+          <button class="action-card daily" id="dailyBtn">
+            <span class="action-emoji">📅</span>
+            <span class="action-title">Dagelijkse puzzel</span>
+            <span class="action-desc">Elke dag een nieuwe uitdaging</span>
+          </button>
+          <button class="action-card random" id="randomBtn">
+            <span class="action-emoji">🎲</span>
+            <span class="action-title">Willekeurige puzzel</span>
+            <span class="action-desc">Vers gegenereerd, altijd oplosbaar</span>
+          </button>
+        </div>
+
+        <div id="puzzleGroups"></div>
+      </section>
+
+      <!-- Spelscherm -->
+      <section id="gameScreen" class="screen hidden">
+        <div class="game-header">
+          <button class="text-btn" id="backBtn">‹ Terug</button>
+          <div class="game-title">
+            <span id="gamePuzzleName">Puzzel</span>
+            <span class="badge" id="gameDifficulty"></span>
+          </div>
+          <div class="game-meta">
+            <span class="timer" id="timer">00:00</span>
+          </div>
+        </div>
+
+        <div class="progress-wrap">
+          <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        </div>
+
+        <div class="board-scroll">
+          <div class="puzzle-layout" id="puzzleLayout">
+            <div class="corner" id="corner"></div>
+            <div class="col-clues" id="colClues"></div>
+            <div class="row-clues" id="rowClues"></div>
+            <div class="board" id="board"></div>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <button class="tool" id="modeFillBtn" data-mode="fill">
+            <span class="tool-ico">⬛</span><span>Vullen</span>
+          </button>
+          <button class="tool" id="modeCrossBtn" data-mode="cross">
+            <span class="tool-ico">✖️</span><span>Kruisen</span>
+          </button>
+          <button class="tool" id="undoBtn"><span class="tool-ico">↶</span><span>Terug</span></button>
+          <button class="tool" id="hintBtn"><span class="tool-ico">💡</span><span>Hint</span></button>
+          <button class="tool" id="clearBtn"><span class="tool-ico">🗑️</span><span>Wissen</span></button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Win-overlay -->
+    <div id="winOverlay" class="overlay hidden">
+      <div class="win-card">
+        <div class="confetti" id="confetti"></div>
+        <div class="win-emoji" id="winEmoji">🎉</div>
+        <h2>Opgelost!</h2>
+        <p class="win-name" id="winName"></p>
+        <div class="win-stats">
+          <div><span class="win-stat-label">Tijd</span><span class="win-stat-value" id="winTime">00:00</span></div>
+          <div><span class="win-stat-label">Beste</span><span class="win-stat-value" id="winBest">—</span></div>
+        </div>
+        <div class="win-actions">
+          <button class="btn-primary" id="nextBtn">Volgende puzzel</button>
+          <button class="btn-ghost" id="winHomeBtn">Naar overzicht</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+  </div>
+
+  <script type="module" src="src/ui/app.js"></script>
+</body>
+</html>
