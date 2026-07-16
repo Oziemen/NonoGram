@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json.schemastore.org/staticwebapp.config.json",
+  "mimeTypes": {
+    ".webmanifest": "application/manifest+json",
+    ".json": "application/json",
+    ".js": "text/javascript",
+    ".css": "text/css",
+    ".svg": "image/svg+xml",
+    ".png": "image/png"
+  },
+  "routes": [
+    { "route": "/sw.js", "headers": { "cache-control": "no-store" } },
+    { "route": "/manifest.webmanifest", "headers": { "cache-control": "no-cache" } },
+    { "route": "/index.html", "headers": { "cache-control": "no-cache" } },
+    { "route": "/icons/*", "headers": { "cache-control": "public, max-age=604800" } }
+  ],
+  "globalHeaders": {
+    "X-Content-Type-Options": "nosniff"
+  }
+}
